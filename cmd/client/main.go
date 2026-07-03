@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	// Init connection and auth user.
 	fmt.Println("Starting Peril client...")
 	connectionStr := "amqp://guest:guest@localhost:5672"
 	conn, err := amqp091.Dial(connectionStr)
@@ -21,7 +22,6 @@ func main() {
 	}
 	defer conn.Close()
 	fmt.Println("Connection Sucessful!")
-
 	username, err := gamelogic.ClientWelcome()
 	if err != nil {
 		log.Fatal(err)
@@ -30,9 +30,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	// init game state
 	state := gamelogic.NewGameState(username)
-
+	// pause game message queue
 	err = pubsub.SubscribeJSON(
 		conn,
 		routing.ExchangePerilDirect,
@@ -44,14 +44,26 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	// army moves message handler
 	err = pubsub.SubscribeJSON(
 		conn,
 		routing.ExchangePerilTopic,
 		fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix, username),
 		fmt.Sprintf("%s.*", routing.ArmyMovesPrefix),
 		pubsub.Transient,
-		handlerMove(state),
+		handlerMove(state, ch),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// war outcome message handler
+	err = pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilTopic,
+		"war",
+		fmt.Sprintf("%s.*", routing.WarRecognitionsPrefix),
+		pubsub.Durable,
+		handlerWar(state, ch),
 	)
 	if err != nil {
 		log.Fatal(err)
