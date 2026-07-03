@@ -30,6 +30,9 @@ func DeclareAndBind(
 	}
 	table := amqp091.Table{"x-dead-letter-exchange": "peril_dlx"}
 	qu, err := ch.QueueDeclare(queueName, isDurable, !isDurable, !isDurable, false, table)
+	if err != nil {
+		return nil, amqp091.Queue{}, err
+	}
 	err = ch.QueueBind(queueName, key, exchange, false, nil)
 	if err != nil {
 		return nil, amqp091.Queue{}, err

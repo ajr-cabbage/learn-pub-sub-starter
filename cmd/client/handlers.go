@@ -49,14 +49,41 @@ func handlerMove(gs *gamelogic.GameState, ch *amqp091.Channel) func(gamelogic.Ar
 func handlerWar(gs *gamelogic.GameState, ch *amqp091.Channel) func(gamelogic.RecognitionOfWar) pubsub.AckType {
 	return func(rw gamelogic.RecognitionOfWar) pubsub.AckType {
 		defer fmt.Print("> ")
-		switch warResult, _, _ := gs.HandleWar(rw); warResult {
+		switch warResult, winner, loser := gs.HandleWar(rw); warResult {
 		case gamelogic.WarOutcomeNotInvolved:
 			return pubsub.NackRequeue
 		case gamelogic.WarOutcomeOpponentWon:
+			err := pubsub.PublishGameLog(
+				ch,
+				gs,
+				rw,
+				fmt.Sprintf("%s won a war against %s", winner, loser),
+			)
+			if err != nil {
+				return pubsub.NackRequeue
+			}
 			return pubsub.Ack
 		case gamelogic.WarOutcomeYouWon:
+			err := pubsub.PublishGameLog(
+				ch,
+				gs,
+				rw,
+				fmt.Sprintf("%s won a war against %s", winner, loser),
+			)
+			if err != nil {
+				return pubsub.NackRequeue
+			}
 			return pubsub.Ack
 		case gamelogic.WarOutcomeDraw:
+			err := pubsub.PublishGameLog(
+				ch,
+				gs,
+				rw,
+				fmt.Sprintf("A war between %s and %s resulted in a draw", winner, loser),
+			)
+			if err != nil {
+				return pubsub.NackRequeue
+			}
 			return pubsub.Ack
 		default:
 			fmt.Println("Error: incorrect war outcome.")

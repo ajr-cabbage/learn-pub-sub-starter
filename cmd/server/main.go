@@ -27,13 +27,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_, _, err = pubsub.DeclareAndBind(
+	err = pubsub.SubscribeGob(
 		conn,
 		routing.ExchangePerilTopic,
 		routing.GameLogSlug,
 		fmt.Sprintf("%s.*", routing.GameLogSlug),
 		pubsub.Durable,
+		handlerLog(),
 	)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 EventLoop:
 	for {
