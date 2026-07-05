@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -100,7 +101,28 @@ EventLoop:
 		case "help":
 			gamelogic.PrintClientHelp()
 		case "spam":
-			fmt.Println("Spamming not allowed yet!")
+			if len(words) < 2 {
+				fmt.Println("Invalid syntax. See help.")
+				continue
+			}
+			n, err := strconv.Atoi(words[1])
+			if err != nil {
+				fmt.Println("Invalid input: Not an integer.")
+				continue
+			}
+			for range n {
+				spamLog := gamelogic.GetMaliciousLog()
+				fakeRW := gamelogic.RecognitionOfWar{
+					Attacker: gamelogic.Player{Username: username},
+					Defender: gamelogic.Player{},
+				}
+				err = pubsub.PublishGameLog(
+					ch,
+					state,
+					fakeRW,
+					spamLog,
+				)
+			}
 		case "quit":
 			fmt.Println("Exiting...")
 			break EventLoop
